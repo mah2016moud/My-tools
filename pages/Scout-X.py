@@ -55,7 +55,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-API_KEY = "RGAPI-4b0b55ed-8c7c-423d-bb3e-d6a6eb060c7d"
+API_KEY = st.secrets["RIOT_API_KEY"]
 VERSION = "14.24.1" 
 
 @st.cache_data(ttl=3600)
@@ -198,3 +198,4 @@ if analyze_btn and "#" in riot_id:
         st.error(f"Error: {e}")
 
 st.sidebar.caption("© 2026 | Developed by MAHMOUD ABDALLA")
+
