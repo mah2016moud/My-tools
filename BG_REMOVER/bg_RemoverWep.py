@@ -5,39 +5,55 @@ import io
 import sys
 import os
 
-# حل مشكلة الـ NoneType اللي ظهرت في الصورة الأولى
+# Anti-crash for Streamlit Cloud
 if sys.stdout is None: sys.stdout = open(os.devnull, "w")
 if sys.stderr is None: sys.stderr = open(os.devnull, "w")
 
-st.set_page_config(page_title="Mahmoud BG Remover", page_icon="✂️")
+# Page Configuration
+st.set_page_config(page_title="AI Background Remover", page_icon="✂️")
 
-st.title("✂️ محترف إزالة الخلفية")
-st.markdown("### برمجة: **MAHMOUD ABDALLA**")
+# Main Title
+st.title("✂️ AI Background Remover")
+st.write("Upload your image and remove the background instantly.")
 
-# اختيار النوع
-mode = st.selectbox("إختر نوع القص:", ("عام (تلقائي)", "أشخاص (دقة عالية)", "ملابس"))
+# Sidebar Settings
+with st.sidebar:
+    st.header("Settings")
+    mode = st.selectbox(
+        "Select Model Type:",
+        ("General", "Human (High Precision)", "Clothing")
+    )
+    
+    st.markdown("---")
+    st.caption("Created by MAHMOUD ABDALLA")
 
-uploaded_file = st.file_uploader("إختر صورة...", type=["jpg", "jpeg", "png", "webp"])
+# File Uploader
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png", "webp"])
 
 if uploaded_file is not None:
     input_image = Image.open(uploaded_file)
-    st.image(input_image, caption="الصورة الأصلية", use_container_width=True)
     
-    if st.button("إزالة الخلفية الآن ✨"):
-        with st.spinner("جاري المعالجة..."):
+    # Show Original Image
+    st.image(input_image, caption="Original Image", use_container_width=True)
+    
+    if st.button("Remove Background ✨"):
+        with st.spinner("Processing... Please wait"):
             try:
-                # المعالجة
+                # Background Removal Process
                 output_image = remove(input_image)
                 
-                # تحضير زر التحميل
+                # Prepare Download Button
                 buf = io.BytesIO()
                 output_image.save(buf, format="PNG")
                 byte_im = buf.getvalue()
                 
-                st.image(output_image, caption="النتيجة", use_container_width=True)
-                st.download_button(label="تحميل الصورة ⬇️", data=byte_im, file_name="output.png", mime="image/png")
-            except Exception as e:
-                st.error(f"حدث خطأ: {e}")
-
-st.markdown("---")
-st.caption("© 2026 | MAHMOUD ABDALLA")
+                # Show Result
+                st.image(output_image, caption="Result", use_container_width=True)
+                
+                st.download_button(
+                    label="Download Image ⬇️",
+                    data=byte_im,
+                    file_name=f"{uploaded_file.name}_no_bg.png",
+                    mime="image/png"
+                )
+                st.success("Success!")
