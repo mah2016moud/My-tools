@@ -49,7 +49,7 @@ st.title("🎯 Scout-X | Final Legendary Edition")
 
 col_srv, col_id, col_btn = st.columns([1, 3, 1])
 with col_srv: region = st.selectbox("Region", ["EUNE", "EUW", "NA"])
-with col_id: riot_id = st.text_input("Name#Tag", placeholder="Lost Saber#911")
+with col_id: riot_id = st.text_input("Name#Tag", placeholder="Player#Tag")
 with col_btn: 
     st.write(" ")
     analyze_btn = st.button("RUN DEEP ANALYSIS")
@@ -164,3 +164,4 @@ if analyze_btn and "#" in riot_id:
         st.error("Riot ID not found. Check Name#Tag and Region.")
 
 st.sidebar.caption("© 2026 | Developed by MAHMOUD ABDALLA")
+
