@@ -63,4 +63,5 @@ if uploaded_file is not None:
 
 # Footer (The small credit you asked for)
 st.markdown("---")
+
 st.caption("© 2026 | All Rights Reserved | MAHMOUD ABDALLA")
