@@ -130,3 +130,26 @@ if analyze_btn and "#" in riot_id:
                             💰 Gold: {m['gold']:,} | 🎯 Farm: {m['cs_m']} CS/m | 👁️ Vision: {m['vision']}
                         </div>
                     """, unsafe_allow_html=True)
+
+        # 4. بابلز الماستري (اللمسة النهائية المضحكة)
+        st.write("---")
+        st.subheader("🌌 Champion Mastery Cloud")
+        if mastery:
+            max_pts = mastery[0].get('championPoints', 1)
+            cloud_html = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:20px; padding:20px; background:#161b22; border-radius:15px;">'
+            for c in mastery:
+                c_name = CHAMPS_MAP.get(str(c.get('championId')), "Hero")
+                pts = c.get('championPoints', 0)
+                sz = 60 + (math.sqrt(pts) / math.sqrt(max_pts)) * 120
+                cloud_html += f'''
+                <div style="text-align:center;">
+                    <img class="bubble-hero" src="https://ddragon.leagueoflegends.com/cdn/14.3.1/img/champion/{c_name}.png" 
+                         style="width:{sz}px; height:{sz}px; border-radius:50%; border:2px solid #f2cc60;">
+                    <p style="font-size:10px; margin-top:5px;">{pts:,}</p>
+                </div>'''
+            st.markdown(cloud_html + '</div>', unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error("Error fetching data. Check Riot ID or API Key.")
+
+st.caption("© 2026 | Developed by MAHMOUD ABDALLA")
