@@ -57,3 +57,10 @@ if uploaded_file is not None:
                     mime="image/png"
                 )
                 st.success("Success!")
+                
+            except Exception as e:
+                st.error(f"Error occurred: {e}")
+
+# Footer (The small credit you asked for)
+st.markdown("---")
+st.caption("© 2026 | All Rights Reserved | MAHMOUD ABDALLA")
