@@ -1,7 +1,7 @@
 import streamlit as st
 
 # إعدادات الصفحة
-st.set_page_config(page_title="حاسبة الخصومات |دعاء ربيع ", page_icon="💰")
+st.set_page_config(page_title="حاسبة الخصومات | ", page_icon="💰")
 
 # تنسيق مخصص لجعل الواجهة جذابة وتناسب الهوية المطلوبة
 st.markdown("""
@@ -67,4 +67,5 @@ st.markdown("""
     <div class="footer-text">
         © 2026 | All Rights Reserved | MAHMOUD ABDALLA
     </div>
+
     """, unsafe_allow_html=True)
