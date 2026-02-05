@@ -61,4 +61,4 @@ if st.button("Generate QR Code"):
         st.download_button("Download PNG", buf.getvalue(), "qr_code.png", "image/png")
 
 st.markdown("---")
-st.markdown("<h4 style='text-align: center;'>© 2026 | All Rights Reserved<br>MAHMOUD ABDALLA</h4>", unsafe_allow_html=True)
+st.caption("© 2026 | All Rights Reserved | MAHMOUD ABDALLA")
