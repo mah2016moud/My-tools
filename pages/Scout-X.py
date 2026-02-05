@@ -1,10 +1,10 @@
 import streamlit as st
 import requests
 import time
+from collections import Counter # مكتبة لحساب المركز الأكثر تكراراً
 
 st.set_page_config(page_title="Scout-X | Final Edition v4.0", layout="wide")
 
-# تصميم النيون اللي في شغلك
 st.markdown("""
     <style>
     .main { background-color: #0d1117; color: #c9d1d9; }
@@ -40,39 +40,37 @@ if analyze_btn and "#" in riot_id:
     plat, rout = m_[region]
 
     try:
-        # نظام الانتظار المطول لضمان الرانك والماستري
-        with st.status("Performing Deep Sync (Please wait 20-30s)...", expanded=True) as status:
-            # 1. جلب PUUID
+        with st.status("Performing Deep Sync (Please wait 25s)...", expanded=True) as status:
             acc = requests.get(f"https://{rout}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}").json()
             puuid = acc['puuid']
-            time.sleep(2.0) # انتظار طويل لراحة السيرفر
+            time.sleep(2.0) 
             
-            # 2. جلب Summoner ID والرانك (هنا المشكلة كانت بتحصل)
-            st.write("📡 Synchronizing Rank Data...")
+            st.write("📡 Synchronizing Rank & Mastery...")
             sum_res = requests.get(f"https://{plat}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={API_KEY}").json()
             s_id = sum_res.get('id')
             time.sleep(2.0) 
             
             ranks = requests.get(f"https://{plat}.api.riotgames.com/lol/league/v4/entries/by-summoner/{s_id}?api_key={API_KEY}").json()
-            st.write("✅ Rank Data Secured.")
             time.sleep(2.0)
-            
-            # 3. جلب التوب شامبيونز
-            st.write("⭐ Fetching Mastery Records...")
             mastery = requests.get(f"https://{plat}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/top?count=3&api_key={API_KEY}").json()
             time.sleep(2.0)
             
-            # 4. جلب الماتشات والتقارير
-            st.write("🎮 Analyzing Last 10 Matches...")
+            st.write("🎮 Analyzing Lane Distribution...")
             m_ids = requests.get(f"https://{rout}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?count=10&api_key={API_KEY}").json()
 
             match_list = []
+            lanes_played = [] # قائمة لحفظ المراكز
             for mid in m_ids:
-                time.sleep(1.0) # نص ثانية لضمان جودة الريبورت
+                time.sleep(1.0) 
                 m_data = requests.get(f"https://{rout}.api.riotgames.com/lol/match/v5/matches/{mid}?api_key={API_KEY}").json()
                 if 'info' in m_data:
                     for p in m_data['info']['participants']:
                         if p['puuid'] == puuid:
+                            # جلب المركز الفعلي من بيانات الماتش
+                            lane = p.get('individualPosition', 'UNKNOWN')
+                            if lane == 'NONE' or not lane: lane = p.get('lane', 'UNKNOWN')
+                            lanes_played.append(lane)
+                            
                             dur = max(1, m_data['info'].get('gameDuration', 0)/60)
                             cs_m = p['totalMinionsKilled'] / dur
                             match_list.append({
@@ -84,16 +82,19 @@ if analyze_btn and "#" in riot_id:
                                 'f_rate': "GODLIKE" if cs_m > 8.5 else "GREAT" if cs_m > 6.5 else "DECENT" if cs_m > 4.5 else "BAD",
                                 'v_rate': "GODLIKE" if p.get('visionScore', 0) > 35 else "GREAT" if p.get('visionScore', 0) > 25 else "DECENT" if p.get('visionScore', 0) > 15 else "BAD"
                             })
-            status.update(label="Analysis Complete! Displaying results...", state="complete", expanded=False)
+            
+            # حساب المركز الأكثر تكراراً بدلاً من تثبيته
+            top_role = Counter(lanes_played).most_common(1)[0][0] if lanes_played else "UNKNOWN"
+            status.update(label="Analysis Complete!", state="complete", expanded=False)
 
         # --- العرض النهائي ---
         st.write("---")
         c1, c2, c3 = st.columns(3)
         with c1: st.markdown(f'<div class="neon-box" style="border-color:#3fb950"><p>WIN RATE</p><h2>{(sum(1 for m in match_list if m["win"])/len(match_list)*100) if match_list else 0:.0f}%</h2></div>', unsafe_allow_html=True)
-        with c2: st.markdown(f'<div class="neon-box" style="border-color:#f2cc60"><p>TOP ROLE</p><h2>TOP</h2></div>', unsafe_allow_html=True)
+        # هنا التغيير: عرض المركز الحقيقي
+        with c2: st.markdown(f'<div class="neon-box" style="border-color:#f2cc60"><p>TOP ROLE</p><h2>{top_role}</h2></div>', unsafe_allow_html=True)
         with c3: st.markdown(f'<div class="neon-box" style="border-color:#58a6ff"><p>MATCHES</p><h2>{len(match_list)}</h2></div>', unsafe_allow_html=True)
 
-        # المربعات السفلية (الرانك والماستري)
         st.write("---")
         b1, b2 = st.columns(2)
         with b1:
@@ -133,6 +134,6 @@ if analyze_btn and "#" in riot_id:
                     """, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"Sync Interrupted: Riot servers are busy. Please try again in 10 seconds.")
+        st.error(f"Sync Interrupted: Riot servers are busy. Please try again.")
 
 st.caption("© 2026 | Developed by MAHMOUD ABDALLA")
