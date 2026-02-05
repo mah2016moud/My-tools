@@ -17,7 +17,7 @@ def check_login():
             pass_input = st.text_input("كلمة المرور", type="password")
             
             if st.button("دخول"):
-                if user_input == "11" and pass_input == "11":
+                if user_input == "doaa" and pass_input == "doaa":
                     st.session_state["authenticated_calc"] = True
                     st.success("تم تسجيل الدخول بنجاح!")
                     st.rerun()
@@ -98,3 +98,4 @@ if check_login():
     if st.sidebar.button("تسجيل الخروج 🚪"):
         st.session_state["authenticated_calc"] = False
         st.rerun()
+
