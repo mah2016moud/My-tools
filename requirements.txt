@@ -1,0 +1,7 @@
+streamlit
+rembg
+pillow
+onnxruntime
+streamlit
+qrcode[pillow]
+Pillow
