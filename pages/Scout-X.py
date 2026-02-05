@@ -14,18 +14,42 @@ st.markdown("""
     .card-bot { background: #161b22; border-radius: 12px; padding: 15px; border: 2px solid; min-height: 150px; }
     .report-card { background: #0d1117; border: 1px solid #30363d; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
     
-    /* حل مشكلة الدوائر المربعة نهائياً */
+    /* حل مشكلة الدوائر المربعة */
     .bubble-hero { 
         border: 4px solid #f2cc60; 
         border-radius: 50% !important; 
         object-fit: cover !important; 
         aspect-ratio: 1 / 1; 
-        transition: 0.3s;
+        transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         display: block;
         margin: 0 auto;
     }
-    .bubble-hero:hover { transform: scale(1.1); filter: brightness(1.2); box-shadow: 0 0 20px #f2cc60; }
+    .bubble-hero:hover { transform: scale(1.15); filter: brightness(1.3); box-shadow: 0 0 25px #f2cc60; }
     
+    /* --- أنيميشن الماستري القوي (The Legendary Impact) --- */
+    @keyframes mastery-punch {
+        0% { transform: scale(1); }
+        20% { transform: scale(0.9) rotate(-3deg); }
+        50% { transform: scale(1.2) rotate(3deg); }
+        80% { transform: scale(0.95) rotate(0deg); }
+        100% { transform: scale(1.1); } /* يفضل كبير شوية */
+    }
+
+    @keyframes gold-flash {
+        0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.8); border-color: #fff; }
+        70% { box-shadow: 0 0 40px 25px rgba(255, 215, 0, 0); border-color: #f2cc60; }
+        100% { box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.5); }
+    }
+
+    .high-mastery-legendary {
+        animation: 
+            mastery-punch 0.8s ease-in-out infinite alternate, 
+            gold-flash 1.5s infinite;
+        border: 5px solid #ffd700 !important;
+        position: relative;
+        z-index: 10;
+    }
+
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     .animate-pulse { animation: pulse 3s infinite ease-in-out; }
     </style>
@@ -113,11 +137,11 @@ if analyze_btn and "#" in riot_id:
         with b2:
             m_html = "<b>⭐ TOP 3 CHAMPIONS</b><hr>"
             for c in mastery[:3]:
-                name = ID_TO_NAME.get(str(c['championId']), "Hero")
-                m_html += f"• {name}: Lvl {c['championLevel']} ({c['championPoints']:,} pts)<br>"
+                c_name = ID_TO_NAME.get(str(c['championId']), "Hero")
+                m_html += f"• {c_name}: Lvl {c['championLevel']} ({c['championPoints']:,} pts)<br>"
             st.markdown(f'<div class="card-bot" style="border-color:#f2cc60">{m_html}</div>', unsafe_allow_html=True)
 
-        # 3. الماتش هيستوري (الصور والتقييمات)
+        # 3. الماتش هيستوري
         st.write("---")
         st.subheader("🎮 Match History & Performance Reports")
         for m in match_list:
@@ -128,7 +152,6 @@ if analyze_btn and "#" in riot_id:
                 with col_img: 
                     st.image(f"https://ddragon.leagueoflegends.com/cdn/{VERSION}/img/champion/{m['champ']}.png", width=100)
                 with col_rep:
-                    # تقييم ذكي للأداء
                     rating = "Average"
                     if m['k'] > 10: rating = "⭐ Legendary Carry"
                     elif m['d'] > 10: rating = "🍔 Feeding Warning"
@@ -141,27 +164,37 @@ if analyze_btn and "#" in riot_id:
                         </div>
                     """, unsafe_allow_html=True)
 
-        # 4. بابلز الماستري (الصور الدائرية الكاملة)
+        # 4. بابلز الماستري (النسخة المطورة بالأنيميشن القوي)
         st.write("---")
         st.subheader("🌌 Champion Mastery Cloud")
         if mastery:
             max_p = mastery[0].get('championPoints', 1)
-            cloud = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:25px; background:#161b22; padding:30px; border-radius:20px;">'
-            for c in mastery:
+            cloud = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:25px; background:#161b22; padding:40px; border-radius:20px; overflow:visible;">'
+            
+            for i, c in enumerate(mastery):
                 c_img_id = NAME_TO_ID.get(str(c['championId']), "Unknown")
                 pts = c['championPoints']
+                
+                # حساب الحجم
                 sz = 75 + (math.sqrt(pts) / math.sqrt(max_p)) * 120
+                
+                # تمييز الماستري الأعلى (أول عنصر في القائمة)
+                is_highest = "high-mastery-legendary" if i == 0 else "animate-pulse"
+                extra_label = "🔥 LEGEND" if i == 0 else ""
+                
                 cloud += f'''
-                <div style="text-align:center; width:{sz+10}px;">
-                    <img class="bubble-hero animate-pulse" 
+                <div style="text-align:center; width:{sz+20}px; position:relative;">
+                    <img class="bubble-hero {is_highest}" 
                          src="https://ddragon.leagueoflegends.com/cdn/{VERSION}/img/champion/{c_img_id}.png" 
                          style="width:{sz}px; height:{sz}px;">
-                    <p style="font-size:12px; font-weight:bold; margin-top:10px; color:#f2cc60;">{pts:,}</p>
+                    <p style="font-size:12px; font-weight:bold; margin-top:10px; color:#f2cc60;">
+                        <span style="display:block; font-size:10px; color:#fff;">{extra_label}</span>
+                        {pts:,}
+                    </p>
                 </div>'''
             st.markdown(cloud + '</div>', unsafe_allow_html=True)
 
     except Exception as e:
-        st.error("Riot ID not found. Check Name#Tag and Region.")
+        st.error(f"Error: {e}")
 
 st.sidebar.caption("© 2026 | Developed by MAHMOUD ABDALLA")
-
