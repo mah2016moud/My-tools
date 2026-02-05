@@ -4,35 +4,42 @@ import time
 import math
 from collections import Counter
 
-# إعدادات الصفحة والتصميم النيون المظبوط
-st.set_page_config(page_title="Scout-X | Ultimate Unified", layout="wide")
+# التصميم النيون المظبوط 100%
+st.set_page_config(page_title="Scout-X | Professional Final", layout="wide")
 
 st.markdown("""
     <style>
-    .main { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; }
+    .main { background-color: #0d1117; color: #c9d1d9; }
     .neon-box { border: 2px solid #3fb950; border-radius: 40px; padding: 20px; text-align: center; background: #161b22; }
     .card-bot { background: #161b22; border-radius: 12px; padding: 15px; border: 2px solid; min-height: 150px; }
     .report-card { background: #0d1117; border: 1px solid #30363d; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
     
-    /* الأنيميشن المضحك والاحترافي */
-    @keyframes pulse-funny {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.03) rotate(1deg); }
-        100% { transform: scale(1); }
+    /* حل مشكلة الفراغات السودة نهائياً */
+    .bubble-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
     
-    /* التعديل الجوهري: جعل الصورة تملأ الدايرة بالكامل */
     .bubble-hero { 
-        animation: pulse-funny 3s infinite ease-in-out; 
-        cursor: pointer; 
-        transition: 0.3s; 
-        border: 3px solid #f2cc60; 
-        border-radius: 50%; 
-        object-fit: cover; /* لملء الفراغات تماماً */
+        border: 4px solid #f2cc60; 
+        border-radius: 50% !important; /* إجبار الصورة على الدوران */
+        object-fit: cover !important; /* ملء كامل المساحة */
+        aspect-ratio: 1 / 1; /* ضمان المربع الكامل قبل الدوران */
+        transition: 0.3s;
+        cursor: pointer;
         display: block;
-        margin: 0 auto;
     }
-    .bubble-hero:hover { transform: scale(1.15) !important; z-index: 10; filter: brightness(1.2); box-shadow: 0 0 20px rgba(242, 204, 96, 0.5); }
+    
+    .bubble-hero:hover { transform: scale(1.1); filter: brightness(1.2); box-shadow: 0 0 20px #f2cc60; }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .animate-pulse { animation: pulse 3s infinite ease-in-out; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -50,14 +57,14 @@ def get_champs_data():
 
 NAME_TO_ID, ID_TO_NAME = get_champs_data()
 
-st.title("🎯 Scout-X | Ultimate Unified Edition")
+st.title("🎯 Scout-X | Professional Edition")
 
 col_srv, col_id, col_btn = st.columns([1, 3, 1])
 with col_srv: region = st.selectbox("Region", ["EUNE", "EUW", "NA"])
 with col_id: riot_id = st.text_input("Name#Tag", placeholder="Lost Saber#911")
 with col_btn: 
     st.write(" ")
-    analyze_btn = st.button("RUN DEEP ANALYSIS")
+    analyze_btn = st.button("RUN FULL SCAN")
 
 if analyze_btn and "#" in riot_id:
     name, tag = riot_id.split("#")
@@ -65,7 +72,7 @@ if analyze_btn and "#" in riot_id:
     plat, rout = m_[region]
 
     try:
-        with st.status("Gathering Intelligence...", expanded=True) as status:
+        with st.status("Analyzing Player...", expanded=True) as status:
             acc = requests.get(f"https://{rout}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}").json()
             puuid = acc['puuid']
             time.sleep(1.0)
@@ -96,9 +103,9 @@ if analyze_btn and "#" in riot_id:
                                 'vision': p.get('visionScore', 0)
                             })
             top_role = Counter(lanes).most_common(1)[0][0] if lanes else "UNKNOWN"
-            status.update(label="Ready!", state="complete", expanded=False)
+            status.update(label="Scanning Finished!", state="complete", expanded=False)
 
-        # العرض (قسم واحد)
+        # الإحصائيات
         st.write("---")
         c1, c2, c3 = st.columns(3)
         wr = (sum(1 for m in match_list if m["win"])/len(match_list)*100) if match_list else 0
@@ -113,36 +120,36 @@ if analyze_btn and "#" in riot_id:
             r_html = "<b>🏆 RANK STATUS</b><hr>"
             if ranks:
                 for r in ranks: r_html += f"• {r.get('tier')} {r.get('rank')} ({r.get('leaguePoints')} LP)<br>"
-            else: r_html += "• Unranked Player"
+            else: r_html += "• Player is currently Unranked"
             st.markdown(f'<div class="card-bot" style="border-color:#00d4ff">{r_html}</div>', unsafe_allow_html=True)
         with b2:
             m_html = "<b>⭐ TOP MASTERY</b><hr>"
             for c in mastery[:3]:
                 c_name = ID_TO_NAME.get(str(c['championId']), "Hero")
-                m_html += f"• {c_name}: Level {c['championLevel']}<br>"
+                m_html += f"• {c_name}: Level {c['championLevel']} ({c['championPoints']:,} pts)<br>"
             st.markdown(f'<div class="card-bot" style="border-color:#f2cc60">{m_html}</div>', unsafe_allow_html=True)
 
-        # الـ Mastery Cloud (التظبيط النهائي)
+        # سحابة الأبطال (Mastery Cloud) - التظبيط الجذري للصور
         st.write("---")
         st.subheader("🌌 Champion Mastery Cloud")
         if mastery:
             max_p = mastery[0].get('championPoints', 1)
-            cloud = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:20px; background:#161b22; padding:30px; border-radius:20px;">'
+            cloud = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:25px; background:#161b22; padding:30px; border-radius:20px;">'
             for c in mastery:
                 c_img_id = NAME_TO_ID.get(str(c['championId']), "Unknown")
                 pts = c['championPoints']
-                # حجم ديناميكي
-                sz = 70 + (math.sqrt(pts) / math.sqrt(max_p)) * 120
+                # حساب الحجم
+                sz = 75 + (math.sqrt(pts) / math.sqrt(max_p)) * 110
                 cloud += f'''
-                <div style="text-align:center; width:{sz+10}px;">
-                    <img class="bubble-hero" 
+                <div class="bubble-container" style="width:{sz+10}px;">
+                    <img class="bubble-hero animate-pulse" 
                          src="https://ddragon.leagueoflegends.com/cdn/{VERSION}/img/champion/{c_img_id}.png" 
                          style="width:{sz}px; height:{sz}px;">
-                    <p style="font-size:12px; font-weight:bold; margin-top:8px; color:#f2cc60;">{pts:,}</p>
+                    <p style="font-size:12px; font-weight:bold; margin-top:10px; color:#f2cc60;">{pts:,}</p>
                 </div>'''
             st.markdown(cloud + '</div>', unsafe_allow_html=True)
 
     except Exception as e:
-        st.error("Riot ID not found or API Key expired.")
+        st.error("Error: Player not found or API limits.")
 
 st.sidebar.caption("© 2026 | Developed by MAHMOUD ABDALLA")
