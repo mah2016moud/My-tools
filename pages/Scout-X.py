@@ -2,23 +2,21 @@ import streamlit as st
 import requests
 import pandas as pd
 
-# 1. إعدادات الصفحة والتصميم النيون المطابق لنسخة الكمبيوتر
-st.set_page_config(page_title="Scout-X | Web Edition", layout="wide")
+# 1. إعدادات التصميم النيون والدوائر
+st.set_page_config(page_title="Scout-X | Web Master", layout="wide")
 
 st.markdown("""
     <style>
     .main { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI'; }
-    .stTable { background-color: #161b22; border: 1px solid #30363d; border-radius: 10px; }
-    /* ستايل المربعات الملونة زي نسخة الكمبيوتر */
-    .rank-box { background: #161b22; border: 2px solid #00d4ff; border-radius: 12px; padding: 20px; min-height: 160px; }
-    .mastery-box { background: #161b22; border: 2px solid #f2cc60; border-radius: 12px; padding: 20px; min-height: 160px; }
+    .stMetric { background: #161b22; border: 2px solid #30363d; padding: 20px; border-radius: 50%; width: 150px; height: 150px; text-align: center; margin: auto; }
     .win-text { color: #3fb950 !important; font-weight: bold; }
     .loss-text { color: #da3633 !important; font-weight: bold; }
-    .stButton>button { background-color: #238636; color: white; width: 100%; border: none; font-weight: bold; }
+    .card-rank { background: #161b22; border: 2px solid #00d4ff; border-radius: 12px; padding: 20px; }
+    .card-mastery { background: #161b22; border: 2px solid #f2cc60; border-radius: 12px; padding: 20px; }
+    .report-box { background: #0d1117; border: 1px solid #58a6ff; padding: 15px; border-radius: 10px; margin-top: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# الـ API KEY - تأكد من تحديثه دائماً
 API_KEY = "RGAPI-4b0b55ed-8c7c-423d-bb3e-d6a6eb060c7d"
 
 @st.cache_data(ttl=3600)
@@ -30,88 +28,89 @@ def get_champs_map():
 
 CHAMPS_MAP = get_champs_map()
 
-# الواجهة العلوية
-st.title("🎯 Scout-X | Master Edition v4.0")
+st.title("🎯 Scout-X | Master Web Edition")
 
-top_col1, top_col2, top_col3 = st.columns([1, 4, 1])
-with top_col1:
+# واجهة البحث
+col_srv, col_id, col_btn = st.columns([1, 3, 1])
+with col_srv:
     region = st.selectbox("Region", ["EUNE", "EUW", "NA"])
-with top_col2:
+with col_id:
     riot_id = st.text_input("Name#Tag", placeholder="Saeed#1111")
-with top_col3:
+with col_btn:
     st.write(" ")
-    analyze_btn = st.button("ANALYZE")
+    analyze_btn = st.button("ANALYZE SYSTEM")
 
-if analyze_btn:
-    if "#" not in riot_id:
-        st.error("Please use Name#Tag format.")
-    else:
-        name, tag = riot_id.split("#")
-        mapping = {"EUNE": ("eun1", "europe"), "EUW": ("euw1", "europe"), "NA": ("na1", "americas")}
-        plat, rout = mapping[region]
+if analyze_btn and "#" in riot_id:
+    name, tag = riot_id.split("#")
+    mapping = {"EUNE": ("eun1", "europe"), "EUW": ("euw1", "europe"), "NA": ("na1", "americas")}
+    plat, rout = mapping[region]
 
-        with st.spinner('Accessing Riot Live Servers...'):
-            try:
-                # حل مشكلة الـ 'id' بخطوات منظمة
-                acc_req = requests.get(f"https://{rout}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}")
-                if acc_req.status_code != 200:
-                    st.error(f"Error: Account not found or API Key expired (Code: {acc_req.status_code})")
-                else:
-                    puuid = acc_req.json()['puuid']
-                    
-                    # جلب بيانات Summoner و Rank
-                    sum_data = requests.get(f"https://{plat}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={API_KEY}").json()
-                    s_id = sum_data.get('id')
-                    
-                    ranks = requests.get(f"https://{plat}.api.riotgames.com/lol/league/v4/entries/by-summoner/{s_id}?api_key={API_KEY}").json()
-                    mastery = requests.get(f"https://{plat}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/top?count=3&api_key={API_KEY}").json()
-                    m_ids = requests.get(f"https://{rout}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?count=10&api_key={API_KEY}").json()
+    with st.spinner('Synchronizing with Riot Data...'):
+        try:
+            # طلب البيانات الأساسية
+            acc = requests.get(f"https://{rout}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}").json()
+            puuid = acc['puuid']
+            
+            sum_data = requests.get(f"https://{plat}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={API_KEY}").json()
+            s_id = sum_data.get('id')
+            
+            ranks = requests.get(f"https://{plat}.api.riotgames.com/lol/league/v4/entries/by-summoner/{s_id}?api_key={API_KEY}").json()
+            mastery = requests.get(f"https://{plat}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/top?count=3&api_key={API_KEY}").json()
+            m_ids = requests.get(f"https://{rout}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?count=10&api_key={API_KEY}").json()
 
-                    # معالجة الماتشات للجدول
-                    match_list = []
-                    wins, total_kda = 0, 0
-                    for mid in m_ids:
-                        m_info = requests.get(f"https://{rout}.api.riotgames.com/lol/match/v5/matches/{mid}?api_key={API_KEY}").json()
-                        for p in m_info['info']['participants']:
-                            if p['puuid'] == puuid:
-                                res = "WIN" if p['win'] else "LOSS"
-                                if p['win']: wins += 1
-                                match_list.append({
-                                    "CHAMPION": p['championName'],
-                                    "RESULT": res,
-                                    "KDA": f"{p['kills']}/{p['deaths']}/{p['assists']}",
-                                    "GOLD": f"{p['goldEarned']:,}"
-                                })
+            # 2. عرض الدوائر الثلاثية
+            match_list = []
+            wins, roles = 0, []
+            for mid in m_ids:
+                m_info = requests.get(f"https://{rout}.api.riotgames.com/lol/match/v5/matches/{mid}?api_key={API_KEY}").json()
+                for p in m_info['info']['participants']:
+                    if p['puuid'] == puuid:
+                        res = "WIN" if p['win'] else "LOSS"
+                        if p['win']: wins += 1
+                        roles.append(p.get('individualPosition', 'UNKNOWN'))
+                        match_list.append({
+                            "CHAMPION": p['championName'],
+                            "RESULT": res,
+                            "KDA": f"{p['kills']}/{p['deaths']}/{p['assists']}",
+                            "GOLD": p['goldEarned'],
+                            "VISION": p.get('visionScore', 0),
+                            "FARM": p['totalMinionsKilled']
+                        })
 
-                    # عرض الـ Gauges/Metrics
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric("WIN RATE", f"{(wins/len(m_ids))*100:.0f}%")
-                    m2.metric("TOP ROLE", "Determining...")
-                    m3.metric("MATCHES", len(m_ids))
+            st.write("---")
+            g1, g2, g3 = st.columns(3)
+            with g1: st.markdown(f'<div class="stMetric"><p>WIN RATE</p><h3>{(wins/len(m_ids))*100:.0f}%</h3></div>', unsafe_allow_html=True)
+            with g2: 
+                top_role = max(set(roles), key=roles.count) if roles else "N/A"
+                st.markdown(f'<div class="stMetric" style="border-color:#f2cc60"><p>TOP ROLE</p><h3>{top_role}</h3></div>', unsafe_allow_html=True)
+            with g3: st.markdown(f'<div class="stMetric" style="border-color:#58a6ff"><p>MATCHES</p><h3>{len(m_ids)}</h3></div>', unsafe_allow_html=True)
 
-                    # الجدول بالألوان الأصلية
-                    st.subheader("Match History")
-                    df = pd.DataFrame(match_list)
-                    
-                    def color_result(val):
-                        color = '#3fb950' if val == "WIN" else '#da3633'
-                        return f'color: {color}; font-weight: bold'
+            # 3. جدول الماتشات مع "Details" لكل جيم
+            st.subheader("Match History & Performance Reports")
+            for i, m in enumerate(match_list):
+                with st.expander(f"🎮 {m['CHAMPION']} - {m['RESULT']} ({m['KDA']})"):
+                    col_img, col_rep = st.columns([1, 3])
+                    with col_img:
+                        st.image(f"https://ddragon.leagueoflegends.com/cdn/14.3.1/img/champion/{m['CHAMPION']}.png", width=100)
+                    with col_rep:
+                        st.markdown(f"""
+                        <div class="report-box">
+                            <b style="color:{'#3fb950' if m['RESULT']=='WIN' else '#da3633'}">{m['RESULT']} REPORT</b><br>
+                            💰 Gold: {m['GOLD']:,} | 🎯 Farm: {m['FARM']} | 👁️ Vision: {m['VISION']}
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                    st.table(df.style.applymap(color_result, subset=['RESULT']))
+            # 4. المربعات السفلية (الرانك والتوب 3 شامبيون)
+            st.write("---")
+            b1, b2 = st.columns(2)
+            with b1:
+                rank_txt = f"{ranks[0]['tier']} {ranks[0]['rank']} ({ranks[0]['leaguePoints']} LP)" if ranks else "UNRANKED"
+                st.markdown(f'<div class="card-rank"><h3>🏆 PLAYER RANK</h3><br><b>{rank_txt}</b></div>', unsafe_allow_html=True)
+            with b2:
+                m_txt = "".join([f"<li>{CHAMPS_MAP.get(str(c['championId']), 'Unknown')}: Level {c['championLevel']}</li>" for c in mastery])
+                st.markdown(f'<div class="card-mastery"><h3>⭐ TOP 3 MASTERY</h3><br><ul>{m_txt}</ul></div>', unsafe_allow_html=True)
 
-                    # المربعات السفلية المتوازنة
-                    st.divider()
-                    b1, b2 = st.columns(2)
-                    with b1:
-                        rank_txt = f"{ranks[0]['tier']} {ranks[0]['rank']}" if ranks else "UNRANKED"
-                        st.markdown(f'<div class="rank-box"><h3 style="color:#00d4ff">🏆 PLAYER RANK</h3><br><b>{rank_txt}</b></div>', unsafe_allow_html=True)
-                    with b2:
-                        m_txt = "".join([f"<li>{CHAMPS_MAP.get(str(c['championId']), 'Unknown')}: Lvl {c['championLevel']}</li>" for c in mastery])
-                        st.markdown(f'<div class="mastery-box"><h3 style="color:#f2cc60">⭐ TOP MASTERY</h3><br><ul>{m_txt}</ul></div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Synchronization Error: Please check API Key or Player ID.")
 
-            except Exception as e:
-                st.error(f"System Error: {str(e)}")
-
-# الحقوق في الأسفل تماماً
-st.divider()
-st.markdown('<p style="text-align: center; color: #8b949e;">© 2026 | Developed by MAHMOUD ABDALLA</p>', unsafe_allow_html=True)
+st.caption("© 2026 | Developed by MAHMOUD ABDALLA")
