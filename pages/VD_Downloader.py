@@ -2,50 +2,52 @@ import streamlit as st
 import yt_dlp
 import os
 
-st.set_page_config(page_title="Video Downloader Pro", page_icon="🎬")
+# إعدادات الواجهة
+st.set_page_config(page_title="Pro Video Downloader", page_icon="🚀")
+st.title("🚀 المحمل الاحترافي السريع")
 
-st.title("🎬 محمل الفيديوهات الذكي")
+# حقل الإدخال
+url = st.text_input("ضع الرابط هنا (فيديو واحد فقط):", placeholder="https://...")
 
-url = st.text_input("ضع رابط الفيديو هنا:", placeholder="https://...")
+# مكان حالة التحميل
+status_placeholder = st.empty()
+progress_bar = st.progress(0)
 
-# دالة تحديث البروجرس بار
 def progress_hook(d):
     if d['status'] == 'downloading':
-        p = d.get('_percent_str', '0%').replace('%','')
         try:
+            p = d.get('_percent_str', '0%').replace('%','')
             progress_bar.progress(float(p)/100)
-            status_text.text(f"📥 جاري التحميل... {p}%")
+            status_placeholder.text(f"📥 جاري التحميل: {p}%")
         except: pass
 
-if st.button("بدء عملية التحميل"):
+if st.button("بدء التحميل"):
     if url:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
         try:
+            if not os.path.exists("downloads"): os.makedirs("downloads")
+            
             ydl_opts = {
-                # 'best' بتجيب فيديو وصوت مدمجين جاهز لو مفيش ffmpeg
-                'format': 'best', 
-                'progress_hooks': [progress_hook],
+                # الحل لمشكلة الـ Playlist (الصورة 4): منع تحميل القوائم
+                'noplaylist': True, 
+                # الحل لمشكلة الـ FFmpeg (الصورة 2): استخدام صيغة مدمجة لا تحتاج دمج
+                'format': 'best[ext=mp4]/best', 
                 'outtmpl': 'downloads/%(title)s.%(ext)s',
-                'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                }
+                'progress_hooks': [progress_hook],
+                'nocheckcertificate': True,
+                # الحل لمشكلة 403 (الصورة 1 و 5): انتحال صفة متصفح أندرويد (أصعب في الحظر)
+                'user_agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
             }
 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-                file_path = ydl.prepare_filename(info)
-
-            with open(file_path, "rb") as f:
-                st.success("✅ تم التحميل بنجاح!")
-                st.download_button(
-                    label="💾 احفظ الفيديو الآن",
-                    data=f,
-                    file_name=os.path.basename(file_path),
-                    mime="video/mp4"
-                )
+            with st.spinner('جاري المعالجة... قد يستغرق الأمر دقيقة'):
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    file_path = ydl.prepare_filename(info)
+                
+                with open(file_path, "rb") as f:
+                    st.success("✅ جاهز!")
+                    st.download_button("⬇️ اضغط لحفظ الملف على جهازك", f, file_name=os.path.basename(file_path))
+                    
         except Exception as e:
-            st.error(f"حدث خطأ: {str(e)}")
+            st.error(f"عذراً، يوتيوب حظر السيرفر حالياً (403) أو الرابط غير صالح. جرب رابط آخر.")
     else:
-        st.warning("دخل اللينك الأول يا صاحبي!")
+        st.warning("الرجاء وضع رابط أولاً")
