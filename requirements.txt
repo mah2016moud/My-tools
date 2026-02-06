@@ -7,3 +7,4 @@ Pillow
 requests
 pandas
 jinja2
+yt-dlp
