@@ -22,14 +22,20 @@ if st.button("تحميل"):
 
         try:
             # إعدادات قوية جداً لتخطي حظر 403 ومنع الـ Playlist
-            ydl_opts = {
-                'noplaylist': True, # حل مشكلة الصورة رقم 4 (بيلغي تحميل القوائم)
-                'format': 'best', 
-                'progress_hooks': [progress_hook],
-                # السطر ده بيخلي يوتيوب يفتكر إنك موبايل حقيقي
-                'user_agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
-                'nocheckcertificate': True,
-                'quiet': True,
+           ydl_opts = {
+    'format': 'best',
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    # التعديل السحري هنا: استخدام كليبات يوتيوب المخصصة للأجهزة المخففة
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['android', 'ios'],
+            'skip': ['hls', 'dash']
+        }
+    },
+    'http_headers': {
+        'User-Agent': 'com.google.android.youtube/19.01.33 (Linux; U; Android 11) Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)',
+    }
             }
 
             with st.spinner('🚀 جاري محايلة يوتيوب...'):
@@ -46,3 +52,4 @@ if st.button("تحميل"):
             st.info("💡 جرب تحمل فيديو 'قصير' (Shorts) أو جرب مرة تانية كمان 5 دقائق.")
     else:
         st.warning("حط الرابط الأول!")
+
