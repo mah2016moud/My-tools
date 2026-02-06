@@ -1,30 +1,34 @@
 import streamlit as st
-import yt_dlp
-import os
+import requests
 
-st.title("🎬 محمل فيديوهات بسيط")
+st.title("🎬 محمل الفيديوهات (عن طريق وسيط)")
 
-url = st.text_input("الرابط:")
+url_input = st.text_input("ضع رابط الفيديو (YouTube, TikTok, Instagram):")
 
-if st.button("تحميل"):
-    try:
-        ydl_opts = {
-            'format': 'best[ext=mp4]', # بيجبره ياخد صيغة mp4 مباشرة
-            'noplaylist': True,
-            'quiet': True,
-            # محاولة أخيرة للهيدرز البسيطة
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+if st.button("جلب رابط التحميل"):
+    if url_input:
+        with st.spinner("جاري التواصل مع الوسيط..."):
+            # بنستخدم API وسيط (زي Cobalt كمثال)
+            api_url = "https://api.cobalt.tools/api/json"
+            headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
             }
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            path = ydl.prepare_filename(info)
+            data = {
+                "url": url_input,
+                "videoQuality": "720"
+            }
             
-        with open(path, "rb") as f:
-            st.download_button("💾 حفظ الفيديو", f, file_name=os.path.basename(path))
-            
-    except Exception as e:
-        st.error("السيرفر السحابي محظور حالياً من يوتيوب.")
-        st.info("💡 نصيحة: المواقع الكبيرة اللي بتحمل من يوتيوب بتدفع آلاف الدولارات عشان تغير الـ IP بتاعها كل ثانية. جرب تشغل الكود ده على جهازك (Local) وهيشتغل فوراً!")
+            try:
+                response = requests.post(api_url, json=data, headers=headers)
+                result = response.json()
+                
+                if result.get("url"):
+                    video_url = result["url"]
+                    st.success("✅ تم إيجاد الفيديو!")
+                    st.video(video_url) # معاينة
+                    st.markdown(f'[⬇️ اضغط هنا لتحميل الفيديو مباشرة]({video_url})')
+                else:
+                    st.error("الوسيط لم يستطع جلب الفيديو، قد يكون الرابط غير مدعوم.")
+            except Exception as e:
+                st.error(f"فشل الاتصال بالوسيط: {e}")
