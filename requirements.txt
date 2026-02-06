@@ -8,3 +8,5 @@ requests
 pandas
 jinja2
 yt-dlp
+selenium
+webdriver-manager
