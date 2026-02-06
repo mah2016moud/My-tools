@@ -1,61 +1,85 @@
 import streamlit as st
 import yt_dlp
 import os
-import time
+import re
 
-# إعدادات واجهة الصفحة
-st.set_page_config(page_title="Universal Video Downloader", page_icon="📥", layout="centered")
+# إعدادات الصفحة
+st.set_page_config(page_title="Video Downloader Pro", page_icon="🎬", layout="wide")
 
-st.title("📥 Video Downloader Pro")
-st.markdown("حمل فيديوهاتك المفضلة من YouTube, TikTok, Facebook, Instagram")
+# CSS لتحسين شكل الواجهة
+st.markdown("""
+    <style>
+    .main { text-align: right; direction: rtl; }
+    .stButton>button { width: 100%; border-radius: 20px; height: 3em; background-color: #FF4B4B; color: white; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# حقل إدخال الرابط
-url = st.text_input("انسخ رابط الفيديو هنا:", placeholder="https://www.youtube.com/watch?v=...")
+st.title("🎬 محمل الفيديوهات الذكي")
+st.subheader("حمل من يوتيوب، تيك توك، وفيسبوك بضغطة زر")
 
-if url:
-    try:
-        # إعدادات متقدمة لتجنب الحظر (Error 403)
-        ydl_opts = {
-            'format': 'best',
-            'outtmpl': 'downloads/%(title)s.%(ext)s',
-            'quiet': True,
-            'no_warnings': True,
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Referer': 'https://www.google.com/',
+# دالة لتحديث حالة التحميل (النسبة المئوية)
+def progress_hook(d):
+    if d['status'] == 'downloading':
+        # تنظيف النص لاستخراج النسبة المئوية
+        p = d.get('_percent_str', '0%')
+        p = re.sub(r'\x1b\[[0-9;]*m', '', p) # إزالة أكواد الألوان
+        percent = float(p.replace('%', '').strip())
+        
+        progress_bar.progress(percent / 100)
+        status_text.text(f"📥 جاري التحميل: {p} | السرعة: {d.get('_speed_str', 'N/A')}")
+    
+    if d['status'] == 'finished':
+        status_text.text("✅ اكتمل التحميل! جاري معالجة الملف...")
+
+# المدخلات
+url = st.text_input("ضع رابط الفيديو هنا:", placeholder="https://...")
+quality = st.selectbox("اختر الجودة:", ["Best Quality", "720p", "480p", "Audio Only (MP3)"])
+
+# مكان عرض شريط التقدم والحالة
+status_text = st.empty()
+progress_bar = st.progress(0)
+
+if st.button("بدء عملية التحميل"):
+    if not url:
+        st.warning("رجاءً أدخل الرابط أولاً!")
+    else:
+        try:
+            # إعدادات التحميل بناءً على الاختيار
+            ydl_opts = {
+                'format': 'bestvideo+bestaudio/best' if quality != "Audio Only (MP3)" else 'bestaudio/best',
+                'outtmpl': 'downloads/%(title)s.%(ext)s',
+                'progress_hooks': [progress_hook],
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                }
             }
-        }
+            
+            if quality == "Audio Only (MP3)":
+                ydl_opts['postprocessors'] = [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }]
 
-        with st.spinner('🚀 جاري استخراج البيانات وتحضير الفيديو...'):
-            if not os.path.exists('downloads'):
-                os.makedirs('downloads')
-                
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # الحصول على معلومات الفيديو أولاً
                 info = ydl.extract_info(url, download=True)
                 file_path = ydl.prepare_filename(info)
-                video_title = info.get('title', 'video')
+                
+                # تصحيح الامتداد في حالة الـ MP3
+                if quality == "Audio Only (MP3)":
+                    file_path = os.path.splitext(file_path)[0] + ".mp3"
 
-            # التأكد من وجود الملف وعرضه
-            if os.path.exists(file_path):
-                st.success(f"✅ تم تجهيز: {video_title}")
-                
-                with open(file_path, "rb") as f:
-                    st.download_button(
-                        label="⬇️ اضغط هنا لبدء التحميل على جهازك",
-                        data=f,
-                        file_name=os.path.basename(file_path),
-                        mime="video/mp4"
-                    )
-                
-                # معاينة بسيطة للفيديو
-                st.video(file_path)
-                
-    except Exception as e:
-        st.error(f"❌ عذراً، حدث خطأ: {str(e)}")
-        st.info("نصيحة: تأكد أن الرابط عام (Public) وليس خاصاً.")
+            # عرض زر التحميل النهائي للجهاز
+            with open(file_path, "rb") as f:
+                st.download_button(
+                    label="💾 احفظ الملف الآن على جهازك",
+                    data=f,
+                    file_name=os.path.basename(file_path),
+                    mime="video/mp4" if quality != "Audio Only (MP3)" else "audio/mpeg"
+                )
+            st.balloons() # احتفال بسيط بالنجاح
+            
+        except Exception as e:
+            st.error(f"خطأ: {str(e)}")
 
-st.divider()
-st.caption("Powered by yt-dlp & Streamlit | 2026")
+st.info("💡 ملاحظة: ملفات الويب تُحمل تلقائياً في فولدر (Downloads) الخاص بمتصفحك.")
